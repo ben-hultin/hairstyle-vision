@@ -1,0 +1,27 @@
+export interface TransformationResult {
+  id: string;
+  originalImage: string;
+  generatedImage: string;
+  prompt: string;
+  colors: string[];
+  timestamp: string;
+  isFavorite?: boolean;
+}
+
+export interface ColorOption {
+  name: string;
+  hex: string;
+  category: string;
+}
+
+export interface GenerationRequest {
+  imageUri: string;
+  prompt: string;
+  colors: string[];
+}
+
+export interface GenerationResponse {
+  imageUrl: string;
+  success: boolean;
+  error?: string;
+}
