@@ -6,6 +6,7 @@ export interface TransformationResult {
   colors: string[];
   timestamp: string;
   isFavorite?: boolean;
+  analysis?: string;
 }
 
 export interface ColorOption {

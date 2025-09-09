@@ -9,16 +9,14 @@ import {
   Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, Upload, Sparkles, ArrowRight } from 'lucide-react-native';
+import { Camera, Upload } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { PhotoCapture } from '@/components/PhotoCapture';
 import { ColorPalette } from '@/components/ColorPalette';
 import { PromptInput } from '@/components/PromptInput';
 import { GenerateButton } from '@/components/GenerateButton';
 import { geminiService } from '@/components/GeminiService';
 import { TransformationResult } from '@/types';
-
 
 export default function StudioScreen() {
   const { width } = useWindowDimensions();
@@ -26,7 +24,8 @@ export default function StudioScreen() {
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedResult, setGeneratedResult] = useState<TransformationResult | null>(null);
+  const [generatedResult, setGeneratedResult] =
+    useState<TransformationResult | null>(null);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -44,7 +43,10 @@ export default function StudioScreen() {
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Camera permission is required to take photos');
+      Alert.alert(
+        'Permission needed',
+        'Camera permission is required to take photos'
+      );
       return;
     }
 
@@ -61,12 +63,15 @@ export default function StudioScreen() {
 
   const handleGenerate = async () => {
     if (!selectedImage || selectedColors.length === 0) {
-      Alert.alert('Missing Information', 'Please select a photo and at least one color');
+      Alert.alert(
+        'Missing Information',
+        'Please select a photo and at least one color'
+      );
       return;
     }
 
     setIsGenerating(true);
-    
+
     try {
       const result = await geminiService.generateHairTransformation({
         imageUri: selectedImage,
@@ -82,14 +87,19 @@ export default function StudioScreen() {
           prompt: prompt || 'Hair color transformation',
           colors: selectedColors,
           timestamp: new Date().toISOString(),
+          analysis: result.metadata?.analysis,
         };
-        
+
         setGeneratedResult(transformationResult);
-        Alert.alert('Success!', 'Your hair transformation has been generated!');
+        Alert.alert('Success!', 'Your hair transformation analysis is ready!');
       } else {
-        Alert.alert('Error', result.error || 'Failed to generate transformation');
+        Alert.alert(
+          'Error',
+          result.error || 'Failed to generate transformation'
+        );
       }
     } catch (error) {
+      console.error('Generation error:', error);
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setIsGenerating(false);
@@ -114,18 +124,30 @@ export default function StudioScreen() {
           <View style={styles.photoSection}>
             {selectedImage ? (
               <View style={styles.selectedImageContainer}>
-                <Image source={{ uri: selectedImage }} style={styles.selectedImage} />
-                <TouchableOpacity style={styles.changePhotoButton} onPress={pickImage}>
+                <Image
+                  source={{ uri: selectedImage }}
+                  style={styles.selectedImage}
+                />
+                <TouchableOpacity
+                  style={styles.changePhotoButton}
+                  onPress={pickImage}
+                >
                   <Text style={styles.changePhotoText}>Change Photo</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={styles.photoOptions}>
-                <TouchableOpacity style={[styles.photoOption, { width: (width - 80) / 2 }]} onPress={takePhoto}>
+                <TouchableOpacity
+                  style={[styles.photoOption, { width: (width - 80) / 2 }]}
+                  onPress={takePhoto}
+                >
                   <Camera size={32} color="#E91E63" strokeWidth={2} />
                   <Text style={styles.photoOptionText}>Take Photo</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.photoOption, { width: (width - 80) / 2 }]} onPress={pickImage}>
+                <TouchableOpacity
+                  style={[styles.photoOption, { width: (width - 80) / 2 }]}
+                  onPress={pickImage}
+                >
                   <Upload size={32} color="#E91E63" strokeWidth={2} />
                   <Text style={styles.photoOptionText}>Upload Photo</Text>
                 </TouchableOpacity>
@@ -158,20 +180,42 @@ export default function StudioScreen() {
               <View style={styles.resultImages}>
                 <View style={styles.resultImageWrapper}>
                   <Text style={styles.resultImageLabel}>Before</Text>
-                  <Image source={{ uri: generatedResult.originalImage }} style={styles.resultImage} />
+                  <Image
+                    source={{ uri: generatedResult.originalImage }}
+                    style={styles.resultImage}
+                  />
                 </View>
                 <View style={styles.resultImageWrapper}>
                   <Text style={styles.resultImageLabel}>After</Text>
-                  <Image source={{ uri: generatedResult.generatedImage }} style={styles.resultImage} />
+                  <Image
+                    source={{ uri: generatedResult.generatedImage }}
+                    style={styles.resultImage}
+                  />
                 </View>
               </View>
               <View style={styles.resultInfo}>
-                <Text style={styles.resultPrompt}>{generatedResult.prompt}</Text>
+                <Text style={styles.resultPrompt}>
+                  {generatedResult.prompt}
+                </Text>
                 <View style={styles.resultColors}>
-                  {generatedResult.colors.map((color, index) => (
-                    <View key={index} style={[styles.resultColorDot, { backgroundColor: color }]} />
+                  {generatedResult.colors.map((color) => (
+                    <View
+                      key={color}
+                      style={[
+                        styles.resultColorDot,
+                        { backgroundColor: color },
+                      ]}
+                    />
                   ))}
                 </View>
+                {generatedResult.analysis && (
+                  <View style={styles.analysisContainer}>
+                    <Text style={styles.analysisTitle}>AI Analysis:</Text>
+                    <Text style={styles.analysisText}>
+                      {generatedResult.analysis}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           </View>
@@ -330,5 +374,23 @@ const styles = StyleSheet.create({
     marginHorizontal: 3,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+  },
+  analysisContainer: {
+    marginTop: 15,
+    padding: 15,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+  },
+  analysisTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  analysisText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: '#666',
+    lineHeight: 18,
   },
 });

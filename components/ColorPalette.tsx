@@ -19,25 +19,25 @@ const hairColors = [
   { name: 'Ash Blonde', hex: '#E6D690', category: 'Blonde' },
   { name: 'Golden Blonde', hex: '#D4C47A', category: 'Blonde' },
   { name: 'Honey Blonde', hex: '#C4B454', category: 'Blonde' },
-  
+
   // Natural Browns
   { name: 'Light Brown', hex: '#8B4513', category: 'Brown' },
   { name: 'Medium Brown', hex: '#654321', category: 'Brown' },
   { name: 'Dark Brown', hex: '#4A2C2A', category: 'Brown' },
   { name: 'Espresso', hex: '#3D1A00', category: 'Brown' },
-  
+
   // Reds
   { name: 'Auburn', hex: '#A0522D', category: 'Red' },
   { name: 'Copper', hex: '#D2691E', category: 'Red' },
   { name: 'Cherry Red', hex: '#B22222', category: 'Red' },
   { name: 'Burgundy', hex: '#8B0000', category: 'Red' },
-  
+
   // Fashion Colors
   { name: 'Rose Gold', hex: '#E8B4B8', category: 'Fashion' },
   { name: 'Lavender', hex: '#C8A8E8', category: 'Fashion' },
   { name: 'Mint', hex: '#98E4D6', category: 'Fashion' },
   { name: 'Peachy Pink', hex: '#FFCBA4', category: 'Fashion' },
-  
+
   // Bold Colors
   { name: 'Electric Blue', hex: '#00CED1', category: 'Bold' },
   { name: 'Hot Pink', hex: '#FF69B4', category: 'Bold' },
@@ -45,10 +45,13 @@ const hairColors = [
   { name: 'Neon Green', hex: '#32CD32', category: 'Bold' },
 ];
 
-export function ColorPalette({ selectedColors, onColorSelect }: ColorPaletteProps) {
+export function ColorPalette({
+  selectedColors,
+  onColorSelect,
+}: ColorPaletteProps) {
   const toggleColor = (hex: string) => {
     if (selectedColors.includes(hex)) {
-      onColorSelect(selectedColors.filter(color => color !== hex));
+      onColorSelect(selectedColors.filter((color) => color !== hex));
     } else if (selectedColors.length < 3) {
       onColorSelect([...selectedColors, hex]);
     }
@@ -59,7 +62,12 @@ export function ColorPalette({ selectedColors, onColorSelect }: ColorPaletteProp
       <Text style={styles.instructions}>
         Select up to 3 colors for your transformation
       </Text>
-      <ScrollView style={styles.colorGrid} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.colorGrid}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        nestedScrollEnabled={true}
+      >
         <View style={styles.colorRows}>
           {hairColors.map((color) => (
             <TouchableOpacity
@@ -70,7 +78,9 @@ export function ColorPalette({ selectedColors, onColorSelect }: ColorPaletteProp
               ]}
               onPress={() => toggleColor(color.hex)}
             >
-              <View style={[styles.colorSwatch, { backgroundColor: color.hex }]}>
+              <View
+                style={[styles.colorSwatch, { backgroundColor: color.hex }]}
+              >
                 {selectedColors.includes(color.hex) && (
                   <Check size={16} color="white" strokeWidth={3} />
                 )}
@@ -81,10 +91,12 @@ export function ColorPalette({ selectedColors, onColorSelect }: ColorPaletteProp
           ))}
         </View>
       </ScrollView>
-      
+
       {selectedColors.length > 0 && (
         <View style={styles.selectedColorsContainer}>
-          <Text style={styles.selectedTitle}>Selected Colors ({selectedColors.length}/3)</Text>
+          <Text style={styles.selectedTitle}>
+            Selected Colors ({selectedColors.length}/3)
+          </Text>
           <View style={styles.selectedColors}>
             {selectedColors.map((color, index) => (
               <TouchableOpacity
@@ -92,7 +104,12 @@ export function ColorPalette({ selectedColors, onColorSelect }: ColorPaletteProp
                 style={styles.selectedColor}
                 onPress={() => toggleColor(color)}
               >
-                <View style={[styles.selectedColorSwatch, { backgroundColor: color }]} />
+                <View
+                  style={[
+                    styles.selectedColorSwatch,
+                    { backgroundColor: color },
+                  ]}
+                />
               </TouchableOpacity>
             ))}
           </View>
@@ -123,10 +140,14 @@ const styles = StyleSheet.create({
   colorGrid: {
     maxHeight: 300,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   colorRows: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    paddingBottom: 10,
   },
   colorItem: {
     width: '48%',
