@@ -7,6 +7,7 @@ import {
   ScrollView,
   useWindowDimensions,
   Alert,
+  Pressable,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Camera, Upload } from 'lucide-react-native';
@@ -15,6 +16,7 @@ import { Image } from 'expo-image';
 import { ColorPalette } from '@/components/ColorPalette';
 import { PromptInput } from '@/components/PromptInput';
 import { GenerateButton } from '@/components/GenerateButton';
+import { FullscreenImageViewer } from '@/components/FullscreenImageViewer';
 import { geminiService } from '@/components/GeminiService';
 import { TransformationResult } from '@/types';
 
@@ -26,6 +28,20 @@ export default function StudioScreen() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] =
     useState<TransformationResult | null>(null);
+  const [isFullscreenVisible, setIsFullscreenVisible] = useState(false);
+
+  // Debug logging for fullscreen state changes
+  React.useEffect(() => {
+    console.log('Fullscreen visibility changed:', isFullscreenVisible);
+  }, [isFullscreenVisible]);
+
+  // Debug logging for generated result
+  React.useEffect(() => {
+    if (generatedResult) {
+      console.log('Generated result updated:', generatedResult);
+      console.log('Generated image URI:', generatedResult.generatedImage);
+    }
+  }, [generatedResult]);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -91,6 +107,11 @@ export default function StudioScreen() {
         };
 
         setGeneratedResult(transformationResult);
+        console.log('Generated result set:', transformationResult);
+        console.log(
+          'Generated image URI:',
+          transformationResult.generatedImage
+        );
         Alert.alert('Success!', 'Your hair transformation analysis is ready!');
       } else {
         Alert.alert(
@@ -187,10 +208,24 @@ export default function StudioScreen() {
                 </View>
                 <View style={styles.resultImageWrapper}>
                   <Text style={styles.resultImageLabel}>After</Text>
-                  <Image
-                    source={{ uri: generatedResult.generatedImage }}
+                  <Pressable
+                    onPress={() => {
+                      console.log(
+                        'After image tapped, setting fullscreen visible to true'
+                      );
+                      console.log(
+                        'Generated result image URI:',
+                        generatedResult.generatedImage
+                      );
+                      setIsFullscreenVisible(true);
+                    }}
                     style={styles.resultImage}
-                  />
+                  >
+                    <Image
+                      source={{ uri: generatedResult.generatedImage }}
+                      style={styles.resultImage}
+                    />
+                  </Pressable>
                 </View>
               </View>
               <View style={styles.resultInfo}>
@@ -229,6 +264,17 @@ export default function StudioScreen() {
           />
         </View>
       </ScrollView>
+
+      {generatedResult && (
+        <FullscreenImageViewer
+          visible={isFullscreenVisible}
+          imageUri={generatedResult.generatedImage}
+          onClose={() => {
+            console.log('Closing fullscreen viewer');
+            setIsFullscreenVisible(false);
+          }}
+        />
+      )}
     </View>
   );
 }
