@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   useWindowDimensions,
   Alert,
   Pressable,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Camera, Upload } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -139,7 +139,15 @@ export default function StudioScreen() {
         <Text style={styles.headerSubtitle}>Transform your hair with AI</Text>
       </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        keyboardShouldPersistTaps="handled"
+        extraScrollHeight={20}
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>1. Choose Your Photo</Text>
           <View style={styles.photoSection}>
@@ -159,14 +167,14 @@ export default function StudioScreen() {
             ) : (
               <View style={styles.photoOptions}>
                 <TouchableOpacity
-                  style={[styles.photoOption, { width: (width - 80) / 2 }]}
+                  style={[styles.photoOption, { width: (width - 90) / 2 }]}
                   onPress={takePhoto}
                 >
                   <Camera size={32} color="#E91E63" strokeWidth={2} />
                   <Text style={styles.photoOptionText}>Take Photo</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.photoOption, { width: (width - 80) / 2 }]}
+                  style={[styles.photoOption, { width: (width - 90) / 2 }]}
                   onPress={pickImage}
                 >
                   <Upload size={32} color="#E91E63" strokeWidth={2} />
@@ -263,12 +271,13 @@ export default function StudioScreen() {
             disabled={!selectedImage || selectedColors.length === 0}
           />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {generatedResult && (
         <FullscreenImageViewer
           visible={isFullscreenVisible}
-          imageUri={generatedResult.generatedImage}
+          beforeImageUri={generatedResult.originalImage}
+          afterImageUri={generatedResult.generatedImage}
           onClose={() => {
             console.log('Closing fullscreen viewer');
             setIsFullscreenVisible(false);
@@ -330,6 +339,7 @@ const styles = StyleSheet.create({
   photoOptions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    gap: 10,
   },
   photoOption: {
     alignItems: 'center',

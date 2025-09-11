@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Camera, Upload } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -30,7 +24,10 @@ export function PhotoCapture({ onImageSelected }: PhotoCaptureProps) {
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Camera permission is required to take photos');
+      Alert.alert(
+        'Permission needed',
+        'Camera permission is required to take photos'
+      );
       return;
     }
 
@@ -47,13 +44,17 @@ export function PhotoCapture({ onImageSelected }: PhotoCaptureProps) {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.option} onPress={takePhoto}>
-        <Camera size={32} color="#E91E63" strokeWidth={2} />
-        <Text style={styles.optionText}>Take Photo</Text>
+      <TouchableOpacity onPress={takePhoto}>
+        <View style={styles.option}>
+          <Camera size={32} color="#E91E63" strokeWidth={2} />
+          <Text style={styles.optionText}>Take Photo</Text>
+        </View>
       </TouchableOpacity>
       <TouchableOpacity style={styles.option} onPress={pickImage}>
-        <Upload size={32} color="#E91E63" strokeWidth={2} />
-        <Text style={styles.optionText}>Upload Photo</Text>
+        <View style={styles.option}>
+          <Upload size={32} color="#E91E63" strokeWidth={2} />
+          <Text style={styles.optionText}>Upload Photo</Text>
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -63,8 +64,11 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    gap: 10,
   },
   option: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
     alignItems: 'center',
     padding: 20,
     backgroundColor: '#fce4ec',

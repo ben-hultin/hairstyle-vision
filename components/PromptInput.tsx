@@ -1,41 +1,40 @@
-import React from 'react';
-import {
-  View,
-  TextInput,
-  StyleSheet,
-  Text,
-} from 'react-native';
+import React, { forwardRef } from 'react';
+import { View, TextInput, StyleSheet, Text } from 'react-native';
 import { Sparkles } from 'lucide-react-native';
 
 interface PromptInputProps {
-  value: string;
-  onChangeText: (text: string) => void;
-  placeholder: string;
+  readonly value: string;
+  readonly onChangeText: (text: string) => void;
+  readonly placeholder: string;
 }
 
-export function PromptInput({ value, onChangeText, placeholder }: PromptInputProps) {
-  return (
-    <View style={styles.container}>
-      <View style={styles.inputHeader}>
-        <Sparkles size={20} color="#E91E63" strokeWidth={2} />
-        <Text style={styles.inputLabel}>Style Description</Text>
+export const PromptInput = forwardRef<TextInput, PromptInputProps>(
+  ({ value, onChangeText, placeholder }, ref) => {
+    return (
+      <View style={styles.container}>
+        <View style={styles.inputHeader}>
+          <Sparkles size={20} color="#E91E63" strokeWidth={2} />
+          <Text style={styles.inputLabel}>Style Description</Text>
+        </View>
+        <TextInput
+          ref={ref}
+          style={styles.input}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#999"
+          multiline
+          numberOfLines={4}
+          textAlignVertical="top"
+          returnKeyType="done"
+        />
+        <Text style={styles.helperText}>
+          Be specific about placement, intensity, and style for best results
+        </Text>
       </View>
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="#999"
-        multiline
-        numberOfLines={4}
-        textAlignVertical="top"
-      />
-      <Text style={styles.helperText}>
-        Be specific about placement, intensity, and style for best results
-      </Text>
-    </View>
-  );
-}
+    );
+  }
+);
 
 const styles = StyleSheet.create({
   container: {
