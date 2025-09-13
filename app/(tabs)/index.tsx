@@ -39,14 +39,6 @@ export default function StudioScreen() {
     console.log('Fullscreen visibility changed:', isFullscreenVisible);
   }, [isFullscreenVisible]);
 
-  // Debug logging for generated result
-  React.useEffect(() => {
-    if (generatedResult) {
-      console.log('Generated result updated:', generatedResult);
-      console.log('Generated image URI:', generatedResult.generatedImage);
-    }
-  }, [generatedResult]);
-
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -113,11 +105,6 @@ export default function StudioScreen() {
         };
 
         setGeneratedResult(transformationResult);
-        console.log('Generated result set:', transformationResult);
-        console.log(
-          'Generated image URI:',
-          transformationResult.generatedImage
-        );
         Alert.alert('Success!', 'Your hair transformation analysis is ready!');
       } else {
         Alert.alert(
@@ -234,10 +221,6 @@ export default function StudioScreen() {
                     onPress={() => {
                       console.log(
                         'After image tapped, setting fullscreen visible to true'
-                      );
-                      console.log(
-                        'Generated result image URI:',
-                        generatedResult.generatedImage
                       );
                       setIsFullscreenVisible(true);
                     }}

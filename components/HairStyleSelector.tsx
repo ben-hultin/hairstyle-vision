@@ -17,7 +17,7 @@ export const hairStyles = [
   {
     id: 'balayage',
     name: 'Balayage Highlights',
-    description: 'Soft, hand-painted highlights for a natural, sun-kissed look',
+    description: 'Soft, hand-painted highlights',
   },
   {
     id: 'foiled',
@@ -28,18 +28,18 @@ export const hairStyles = [
   {
     id: 'ombre',
     name: 'Ombre Highlights',
-    description: 'A gradual transition from darker roots to lighter ends',
+    description: 'A gradual transition from one color to another',
   },
   {
     id: 'alternating',
     name: 'Alternating Highlights',
     description:
-      'A mix of blonde and brown highlights, often created with foils, for a multi-dimensional look',
+      'A mix of two or more colors, often created with foils, for a multi-dimensional look',
   },
   {
     id: 'solid',
     name: 'Solid Color Hair Dye',
-    description: 'Hair colored uniformly in a single shade',
+    description: 'Hair colored uniformly in a single color',
   },
   {
     id: 'peekaboo',
@@ -83,11 +83,6 @@ export const HairStyleSelector = ({
               ]}
               onPress={() => toggleStyle(style.id)}
             >
-              <View style={styles.checkContainer}>
-                {selectedHairStyle === style.id && (
-                  <Check size={20} color="#E91E63" strokeWidth={3} />
-                )}
-              </View>
               <Text
                 style={[
                   styles.styleName,
@@ -146,6 +141,7 @@ const styles = StyleSheet.create({
   styleItem: {
     width: '48%',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 15,
     paddingHorizontal: 10,
     borderRadius: 12,
