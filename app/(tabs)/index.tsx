@@ -14,6 +14,7 @@ import { Camera, Upload } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { ColorPalette } from '@/components/ColorPalette';
+import { HairStyleSelector } from '@/components/HairStyleSelector';
 import { PromptInput } from '@/components/PromptInput';
 import { GenerateButton } from '@/components/GenerateButton';
 import { FullscreenImageViewer } from '@/components/FullscreenImageViewer';
@@ -24,6 +25,9 @@ export default function StudioScreen() {
   const { width } = useWindowDimensions();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [selectedHairStyle, setSelectedHairStyle] = useState<string | null>(
+    null
+  );
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] =
@@ -78,10 +82,10 @@ export default function StudioScreen() {
   };
 
   const handleGenerate = async () => {
-    if (!selectedImage || selectedColors.length === 0) {
+    if (!selectedImage || selectedColors.length === 0 || !selectedHairStyle) {
       Alert.alert(
         'Missing Information',
-        'Please select a photo and at least one color'
+        'Please select a photo, at least one color, and a hair style'
       );
       return;
     }
@@ -93,6 +97,7 @@ export default function StudioScreen() {
         imageUri: selectedImage,
         prompt: prompt || 'Hair color transformation',
         colors: selectedColors,
+        hairStyle: selectedHairStyle,
       });
 
       if (result.success) {
@@ -102,6 +107,7 @@ export default function StudioScreen() {
           generatedImage: result.imageUrl,
           prompt: prompt || 'Hair color transformation',
           colors: selectedColors,
+          hairStyle: selectedHairStyle || undefined,
           timestamp: new Date().toISOString(),
           analysis: result.metadata?.analysis,
         };
@@ -194,6 +200,14 @@ export default function StudioScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>2.5. Select Your Hair Style</Text>
+          <HairStyleSelector
+            selectedHairStyle={selectedHairStyle}
+            onHairStyleSelect={setSelectedHairStyle}
+          />
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>3. Describe Your Vision</Text>
           <PromptInput
             value={prompt}
@@ -268,7 +282,11 @@ export default function StudioScreen() {
           <GenerateButton
             onPress={handleGenerate}
             isLoading={isGenerating}
-            disabled={!selectedImage || selectedColors.length === 0}
+            disabled={
+              !selectedImage ||
+              selectedColors.length === 0 ||
+              !selectedHairStyle
+            }
           />
         </View>
       </KeyboardAwareScrollView>
