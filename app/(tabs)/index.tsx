@@ -276,8 +276,7 @@ export default function StudioScreen() {
       {generatedResult && (
         <FullscreenImageViewer
           visible={isFullscreenVisible}
-          beforeImageUri={generatedResult.originalImage}
-          afterImageUri={generatedResult.generatedImage}
+          imageUri={generatedResult.generatedImage}
           onClose={() => {
             console.log('Closing fullscreen viewer');
             setIsFullscreenVisible(false);
