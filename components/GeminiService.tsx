@@ -2,7 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as FileSystem from 'expo-file-system';
-import { GenerationRequest, GenerationResponse } from '@/types';
+import {
+  GenerationRequest,
+  GenerationResponse,
+  HighlightDrawing,
+} from '@/types';
 import { hairStyles } from './HairStyleSelector';
 
 class GeminiService {
@@ -34,6 +38,7 @@ class GeminiService {
     prompt,
     colors,
     hairStyle,
+    highlightDrawing,
   }: GenerationRequest): Promise<{
     analysis: string;
     success: boolean;
@@ -61,7 +66,8 @@ class GeminiService {
       const enhancedPrompt = this.createEnhancedPrompt(
         prompt,
         colorNames,
-        hairStyle
+        hairStyle,
+        highlightDrawing
       );
 
       // Get analysis from Gemini 1.5 Flash
@@ -106,6 +112,7 @@ class GeminiService {
     prompt,
     colors,
     hairStyle,
+    highlightDrawing,
   }: GenerationRequest): Promise<GenerationResponse> {
     try {
       const apiKey = await this.getApiKey();
@@ -130,6 +137,7 @@ class GeminiService {
         prompt,
         colors,
         hairStyle,
+        highlightDrawing,
       });
 
       if (!analysisResult.success) {
@@ -146,7 +154,8 @@ class GeminiService {
         prompt,
         colorNames,
         analysisResult.analysis,
-        hairStyle
+        hairStyle,
+        highlightDrawing
       );
 
       // Generate the transformed image using Gemini 2.5 Flash Image Preview
@@ -187,9 +196,15 @@ class GeminiService {
         imageUrl: generatedImageUrl,
         success: true,
         metadata: {
-          prompt: this.createEnhancedPrompt(prompt, colorNames, hairStyle),
+          prompt: this.createEnhancedPrompt(
+            prompt,
+            colorNames,
+            hairStyle,
+            highlightDrawing
+          ),
           colors: colors,
           analysis: analysisResult.analysis,
+          highlightDrawing,
         },
       };
     } catch (error) {
@@ -235,7 +250,8 @@ class GeminiService {
   private createEnhancedPrompt(
     userPrompt: string,
     colorNames: string[],
-    hairStyleId?: string
+    hairStyleId?: string,
+    highlightDrawing?: HighlightDrawing
   ): string {
     const colorDescription =
       colorNames.length > 0
@@ -250,6 +266,9 @@ class GeminiService {
       ? `Hair Style Technique: ${selectedHairStyle.name} - ${selectedHairStyle.description}`
       : '';
 
+    const highlightInstructions =
+      this.createHighlightInstructions(highlightDrawing);
+
     return `Analyze this reference photo and provide detailed hair transformation suggestions. 
 
 Reference Image: This is the person whose hair we want to transform.
@@ -259,6 +278,8 @@ User Request: "${userPrompt}"
 Color Palette: ${colorDescription}
 
 ${styleDescription}
+
+${highlightInstructions}
 
 Please provide:
 1. A detailed description of how the hair transformation should look
@@ -275,7 +296,8 @@ Focus on creating a natural, flattering look that complements the person's featu
     userPrompt: string,
     colorNames: string[],
     analysisText: string,
-    hairStyleId?: string
+    hairStyleId?: string,
+    highlightDrawing?: HighlightDrawing
   ): string {
     const colorDescription =
       colorNames.length > 0 ? `to ${colorNames.join(', ')} hair colors` : '';
@@ -292,7 +314,13 @@ Focus on creating a natural, flattering look that complements the person's featu
       ? ` using ${selectedHairStyle.name} technique`
       : '';
 
-    return `Using the provided reference image, modify ONLY the hair color ${colorDescription}${techniqueDescription}. 
+    const highlightInstructions =
+      this.createHighlightInstructions(highlightDrawing);
+    const highlightDescription = highlightDrawing
+      ? ' Apply the custom highlight pattern as specified in the drawing reference.'
+      : '';
+
+    return `Using the provided reference image, modify ONLY the hair color ${colorDescription}${techniqueDescription}.${highlightDescription} 
 
 CRITICAL REQUIREMENTS:
 - Keep the EXACT same person, facial features, and appearance from the reference image
@@ -300,6 +328,7 @@ CRITICAL REQUIREMENTS:
 - Keep the EXACT same pose, clothing, and accessories
 - ONLY change the hair color to match: ${colorDescription}
 - ${styleInstructions}
+${highlightInstructions}
 - Maintain the same hair length and texture as in the reference
 - Preserve all facial features, skin tone, and expressions
 - The result should look like the exact same person with only hair color changed
@@ -307,6 +336,68 @@ CRITICAL REQUIREMENTS:
 Style: ${userPrompt}
 
 Generate an image that is identical to the reference but with the hair color professionally transformed using the specified technique.`;
+  }
+
+  private createHighlightInstructions(
+    highlightDrawing?: HighlightDrawing
+  ): string {
+    if (!highlightDrawing?.strokes?.length) {
+      return '';
+    }
+
+    const strokeCount = highlightDrawing.strokes.length;
+    const uniqueColors = new Set(
+      highlightDrawing.strokes.map((stroke) => stroke.color)
+    );
+    const colorList = Array.from(uniqueColors);
+
+    // Analyze stroke patterns
+    const strokeAnalysis = highlightDrawing.strokes.map((stroke) => {
+      const pointCount = stroke.points.length;
+      const strokeWidth = stroke.width || 10;
+      return {
+        color: stroke.color,
+        length: pointCount,
+        thickness: strokeWidth,
+        opacity: stroke.opacity || 1,
+      };
+    });
+
+    // Group strokes by color
+    const colorGroups = strokeAnalysis.reduce((groups, stroke) => {
+      if (!groups[stroke.color]) {
+        groups[stroke.color] = [];
+      }
+      groups[stroke.color].push(stroke);
+      return groups;
+    }, {} as Record<string, typeof strokeAnalysis>);
+
+    let instructions = `\n\nCUSTOM HIGHLIGHT PATTERN REFERENCE:
+The user has drawn a custom highlight pattern with ${strokeCount} strokes using ${colorList.length} different colors.
+
+HIGHLIGHT PLACEMENT INSTRUCTIONS:`;
+
+    // Add color-specific instructions
+    Object.entries(colorGroups).forEach(([color, strokes]) => {
+      const totalStrokes = strokes.length;
+      const avgThickness =
+        strokes.reduce((sum, s) => sum + s.thickness, 0) / totalStrokes;
+      const avgOpacity =
+        strokes.reduce((sum, s) => sum + s.opacity, 0) / totalStrokes;
+
+      instructions += `\n- Color ${color}: Apply ${totalStrokes} highlight section(s) with medium thickness (${Math.round(
+        avgThickness
+      )}px brush equivalent) and ${Math.round(avgOpacity * 100)}% opacity`;
+    });
+
+    instructions += `\n\nPATTERN GUIDELINES:
+- Follow the exact placement and flow indicated by the drawn strokes
+- Maintain natural hair growth direction and texture
+- Blend highlights seamlessly with base hair color
+- Apply colors with the specified intensity and coverage
+- Ensure the final result looks professionally done, not painted on`;
+
+    return instructions;
   }
 }
 

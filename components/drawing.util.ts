@@ -150,8 +150,12 @@ export const canvasToScreen = (
 /**
  * Generate unique stroke ID
  */
+let strokeCounter = 0;
 export const generateStrokeId = (): string => {
-  return `stroke-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  strokeCounter += 1;
+  return `stroke-${Date.now()}-${strokeCounter}-${Math.random()
+    .toString(36)
+    .substring(2, 11)}`;
 };
 
 /**

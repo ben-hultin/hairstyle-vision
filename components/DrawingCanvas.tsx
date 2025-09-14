@@ -1,11 +1,7 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import {
-  PanGestureHandler,
-  PinchGestureHandler,
-} from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  useAnimatedGestureHandler,
   useAnimatedStyle,
   useSharedValue,
   runOnJS,
@@ -13,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Path, Image as SvgImage } from 'react-native-svg';
 import { Image } from 'expo-image';
-import { DrawingCanvasProps } from '@/types/components';
+import type { DrawingCanvasProps } from '@/types/components';
 import { Point, DrawingStroke, GestureState } from '@/types';
 import {
   generateSVGPath,
@@ -41,8 +37,6 @@ export const DrawingCanvas = ({
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
-  const panRef = useRef<PanGestureHandler>(null);
-  const pinchRef = useRef<PinchGestureHandler>(null);
 
   // Drawing state
   const [currentStroke, setCurrentStroke] = useState<DrawingStroke | null>(
@@ -164,9 +158,9 @@ export const DrawingCanvas = ({
     ]
   );
 
-  // Pan gesture handler for drawing and panning
-  const panGestureHandler = useAnimatedGestureHandler({
-    onStart: (event) => {
+  // Pan gesture for drawing and panning
+  const panGesture = Gesture.Pan()
+    .onStart((event) => {
       if (isDrawingEnabled) {
         const canvasPoint = {
           x: (event.x - translateX.value) / scale.value,
@@ -182,8 +176,8 @@ export const DrawingCanvas = ({
           runOnJS(startStroke)(canvasPoint);
         }
       }
-    },
-    onActive: (event) => {
+    })
+    .onUpdate((event) => {
       if (isDrawingEnabled && isDrawing) {
         const canvasPoint = {
           x: (event.x - translateX.value) / scale.value,
@@ -215,25 +209,26 @@ export const DrawingCanvas = ({
           translateY: translateY.value,
         });
       }
-    },
-    onEnd: () => {
+    })
+    .onEnd(() => {
       if (isDrawingEnabled && isDrawing) {
         runOnJS(endStroke)();
       }
-    },
-  });
+    });
 
-  // Pinch gesture handler for zooming
-  const pinchGestureHandler = useAnimatedGestureHandler({
-    onActive: (event: any) => {
+  // Pinch gesture for zooming
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((event) => {
       const scaleValue = event.scale || 1;
       scale.value = clamp(scaleValue, 0.5, 3);
       runOnJS(updateGestureState)({ scale: scale.value });
-    },
-    onEnd: () => {
+    })
+    .onEnd(() => {
       scale.value = withSpring(clamp(scale.value, 0.8, 2.5));
-    },
-  });
+    });
+
+  // Combine gestures
+  const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
 
   // Animated style for the canvas container
   const animatedStyle = useAnimatedStyle(() => ({
@@ -246,20 +241,34 @@ export const DrawingCanvas = ({
 
   // Render stroke paths
   const renderStrokes = useCallback(() => {
-    const allStrokes = currentStroke ? [...strokes, currentStroke] : strokes;
-
-    return allStrokes.map((stroke) => (
-      <Path
-        key={stroke.id}
-        d={generateSVGPath(stroke.points)}
-        stroke={stroke.color}
-        strokeWidth={stroke.width}
-        strokeOpacity={stroke.opacity}
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    ));
+    return (
+      <>
+        {strokes.map((stroke) => (
+          <Path
+            key={stroke.id}
+            d={generateSVGPath(stroke.points)}
+            stroke={stroke.color}
+            strokeWidth={stroke.width}
+            strokeOpacity={stroke.opacity}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+        {currentStroke && (
+          <Path
+            key={`current-${currentStroke.id}`}
+            d={generateSVGPath(currentStroke.points)}
+            stroke={currentStroke.color}
+            strokeWidth={currentStroke.width}
+            strokeOpacity={currentStroke.opacity}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )}
+      </>
+    );
   }, [strokes, currentStroke]);
 
   if (!canvasReady) {
@@ -276,39 +285,25 @@ export const DrawingCanvas = ({
 
   return (
     <View style={styles.container}>
-      <PinchGestureHandler
-        ref={pinchRef}
-        onGestureEvent={pinchGestureHandler}
-        simultaneousHandlers={panRef}
-      >
-        <Animated.View>
-          <PanGestureHandler
-            ref={panRef}
-            onGestureEvent={panGestureHandler}
-            simultaneousHandlers={pinchRef}
-            minPointers={1}
-            maxPointers={1}
+      <GestureDetector gesture={composedGesture}>
+        <Animated.View style={[styles.canvasContainer, animatedStyle]}>
+          <Svg
+            width={actualCanvasDimensions.width}
+            height={actualCanvasDimensions.height}
+            style={styles.svg}
           >
-            <Animated.View style={[styles.canvasContainer, animatedStyle]}>
-              <Svg
-                width={actualCanvasDimensions.width}
-                height={actualCanvasDimensions.height}
-                style={styles.svg}
-              >
-                <SvgImage
-                  x="0"
-                  y="0"
-                  width={actualCanvasDimensions.width}
-                  height={actualCanvasDimensions.height}
-                  href={imageUri}
-                  preserveAspectRatio="xMidYMid slice"
-                />
-                {renderStrokes()}
-              </Svg>
-            </Animated.View>
-          </PanGestureHandler>
+            <SvgImage
+              x="0"
+              y="0"
+              width={actualCanvasDimensions.width}
+              height={actualCanvasDimensions.height}
+              href={imageUri}
+              preserveAspectRatio="xMidYMid slice"
+            />
+            {renderStrokes()}
+          </Svg>
         </Animated.View>
-      </PinchGestureHandler>
+      </GestureDetector>
     </View>
   );
 };

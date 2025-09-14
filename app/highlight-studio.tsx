@@ -110,7 +110,7 @@ export default function HighlightStudio() {
       );
       setBrushSettings(suggestedSettings);
     }
-  }, [hairStyleId, selectedColors, canvasDimensions]);
+  }, [hairStyleId, selectedColors.length, !!canvasDimensions]);
 
   // Handle canvas ready
   const handleCanvasReady = useCallback((dimensions: CanvasDimensions) => {

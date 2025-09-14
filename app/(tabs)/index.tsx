@@ -11,7 +11,7 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Camera, Upload, Palette, ArrowRight } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { ColorPalette } from '@/components/ColorPalette';
@@ -20,7 +20,7 @@ import { PromptInput } from '@/components/PromptInput';
 import { GenerateButton } from '@/components/GenerateButton';
 import { FullscreenImageViewer } from '@/components/FullscreenImageViewer';
 import { geminiService } from '@/components/GeminiService';
-import { TransformationResult } from '@/types';
+import { TransformationResult, HighlightDrawing } from '@/types';
 
 export default function StudioScreen() {
   const { width } = useWindowDimensions();
@@ -34,12 +34,25 @@ export default function StudioScreen() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] =
     useState<TransformationResult | null>(null);
+  const [highlightDrawing] = useState<HighlightDrawing | null>(null);
   const [isFullscreenVisible, setIsFullscreenVisible] = useState(false);
 
   // Debug logging for fullscreen state changes
   React.useEffect(() => {
     console.log('Fullscreen visibility changed:', isFullscreenVisible);
   }, [isFullscreenVisible]);
+
+  // Check for highlight drawing data when returning from HighlightStudio
+  useFocusEffect(
+    React.useCallback(() => {
+      // In a real implementation, you would get the highlight data from:
+      // 1. Route params if passed back
+      // 2. Global state management (Redux, Zustand, etc.)
+      // 3. AsyncStorage if persisted
+      // For now, we'll check if there's any stored data
+      // This is a placeholder for the actual implementation
+    }, [])
+  );
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -111,6 +124,7 @@ export default function StudioScreen() {
         prompt: prompt || 'Hair color transformation',
         colors: selectedColors,
         hairStyle: selectedHairStyle,
+        highlightDrawing: highlightDrawing || undefined,
       });
 
       if (result.success) {
@@ -123,6 +137,7 @@ export default function StudioScreen() {
           hairStyle: selectedHairStyle || undefined,
           timestamp: new Date().toISOString(),
           analysis: result.metadata?.analysis,
+          highlightDrawing: result.metadata?.highlightDrawing,
         };
 
         setGeneratedResult(transformationResult);
@@ -230,9 +245,9 @@ export default function StudioScreen() {
                   Draw Your Highlight Pattern
                 </Text>
                 <Text style={styles.highlightStudioDescription}>
-                  Use our drawing tools to create a custom highlight pattern on
-                  your photo. This will help the AI understand exactly where you
-                  want your highlights placed.
+                  {highlightDrawing
+                    ? `✓ Custom highlight pattern created (${highlightDrawing.strokes.length} strokes)`
+                    : 'Use our drawing tools to create a custom highlight pattern on your photo. This will help the AI understand exactly where you want your highlights placed.'}
                 </Text>
               </View>
             </View>
