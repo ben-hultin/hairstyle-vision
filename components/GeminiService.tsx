@@ -2,23 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as FileSystem from 'expo-file-system';
-
-interface GenerationRequest {
-  imageUri: string;
-  prompt: string;
-  colors: string[];
-}
-
-interface GenerationResponse {
-  imageUrl: string;
-  success: boolean;
-  error?: string;
-  metadata?: {
-    prompt: string;
-    colors: string[];
-    analysis: string;
-  };
-}
+import { GenerationRequest, GenerationResponse } from '@/types';
+import { hairStyles } from './HairStyleSelector';
 
 class GeminiService {
   private apiKey: string | null = null;
@@ -48,6 +33,7 @@ class GeminiService {
     imageUri,
     prompt,
     colors,
+    hairStyle,
   }: GenerationRequest): Promise<{
     analysis: string;
     success: boolean;
@@ -72,7 +58,11 @@ class GeminiService {
 
       // Create a detailed prompt incorporating the reference image, colors, and user input
       const colorNames = this.getColorNames(colors);
-      const enhancedPrompt = this.createEnhancedPrompt(prompt, colorNames);
+      const enhancedPrompt = this.createEnhancedPrompt(
+        prompt,
+        colorNames,
+        hairStyle
+      );
 
       // Get analysis from Gemini 1.5 Flash
       const analysisModel = genAI.getGenerativeModel({
@@ -115,6 +105,7 @@ class GeminiService {
     imageUri,
     prompt,
     colors,
+    hairStyle,
   }: GenerationRequest): Promise<GenerationResponse> {
     try {
       const apiKey = await this.getApiKey();
@@ -138,6 +129,7 @@ class GeminiService {
         imageUri,
         prompt,
         colors,
+        hairStyle,
       });
 
       if (!analysisResult.success) {
@@ -153,7 +145,8 @@ class GeminiService {
       const imageGenerationPrompt = this.createImageGenerationPrompt(
         prompt,
         colorNames,
-        analysisResult.analysis
+        analysisResult.analysis,
+        hairStyle
       );
 
       // Generate the transformed image using Gemini 2.5 Flash Image Preview
@@ -194,7 +187,7 @@ class GeminiService {
         imageUrl: generatedImageUrl,
         success: true,
         metadata: {
-          prompt: this.createEnhancedPrompt(prompt, colorNames),
+          prompt: this.createEnhancedPrompt(prompt, colorNames, hairStyle),
           colors: colors,
           analysis: analysisResult.analysis,
         },
@@ -241,12 +234,21 @@ class GeminiService {
 
   private createEnhancedPrompt(
     userPrompt: string,
-    colorNames: string[]
+    colorNames: string[],
+    hairStyleId?: string
   ): string {
     const colorDescription =
       colorNames.length > 0
         ? `using the following hair colors: ${colorNames.join(', ')}`
         : '';
+
+    const selectedHairStyle = hairStyleId
+      ? hairStyles.find((style) => style.id === hairStyleId)
+      : null;
+
+    const styleDescription = selectedHairStyle
+      ? `Hair Style Technique: ${selectedHairStyle.name} - ${selectedHairStyle.description}`
+      : '';
 
     return `Analyze this reference photo and provide detailed hair transformation suggestions. 
 
@@ -256,9 +258,13 @@ User Request: "${userPrompt}"
 
 Color Palette: ${colorDescription}
 
+${styleDescription}
+
 Please provide:
 1. A detailed description of how the hair transformation should look
-2. Specific styling techniques that would work best
+2. Specific styling techniques that would work best (especially ${
+      selectedHairStyle?.name || 'the requested technique'
+    })
 3. Color placement and blending suggestions
 4. Any additional styling recommendations
 
@@ -268,25 +274,39 @@ Focus on creating a natural, flattering look that complements the person's featu
   private createImageGenerationPrompt(
     userPrompt: string,
     colorNames: string[],
-    analysisText: string
+    analysisText: string,
+    hairStyleId?: string
   ): string {
     const colorDescription =
       colorNames.length > 0 ? `to ${colorNames.join(', ')} hair colors` : '';
 
-    return `Using the provided reference image, modify ONLY the hair color to ${colorDescription}. 
+    const selectedHairStyle = hairStyleId
+      ? hairStyles.find((style) => style.id === hairStyleId)
+      : null;
+
+    const styleInstructions = selectedHairStyle
+      ? `Apply ${selectedHairStyle.name} technique: ${selectedHairStyle.description}`
+      : '';
+
+    const techniqueDescription = selectedHairStyle
+      ? ` using ${selectedHairStyle.name} technique`
+      : '';
+
+    return `Using the provided reference image, modify ONLY the hair color ${colorDescription}${techniqueDescription}. 
 
 CRITICAL REQUIREMENTS:
 - Keep the EXACT same person, facial features, and appearance from the reference image
 - Keep the EXACT same background, lighting, and composition
 - Keep the EXACT same pose, clothing, and accessories
 - ONLY change the hair color to match: ${colorDescription}
-- Maintain the same hair length, style, and texture as in the reference
+- ${styleInstructions}
+- Maintain the same hair length and texture as in the reference
 - Preserve all facial features, skin tone, and expressions
 - The result should look like the exact same person with only hair color changed
 
 Style: ${userPrompt}
 
-Generate an image that is identical to the reference but with the hair color professionally transformed.`;
+Generate an image that is identical to the reference but with the hair color professionally transformed using the specified technique.`;
   }
 }
 

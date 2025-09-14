@@ -14,6 +14,7 @@ import { Camera, Upload } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { ColorPalette } from '@/components/ColorPalette';
+import { HairStyleSelector } from '@/components/HairStyleSelector';
 import { PromptInput } from '@/components/PromptInput';
 import { GenerateButton } from '@/components/GenerateButton';
 import { FullscreenImageViewer } from '@/components/FullscreenImageViewer';
@@ -24,6 +25,9 @@ export default function StudioScreen() {
   const { width } = useWindowDimensions();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [selectedHairStyle, setSelectedHairStyle] = useState<string | null>(
+    null
+  );
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] =
@@ -34,14 +38,6 @@ export default function StudioScreen() {
   React.useEffect(() => {
     console.log('Fullscreen visibility changed:', isFullscreenVisible);
   }, [isFullscreenVisible]);
-
-  // Debug logging for generated result
-  React.useEffect(() => {
-    if (generatedResult) {
-      console.log('Generated result updated:', generatedResult);
-      console.log('Generated image URI:', generatedResult.generatedImage);
-    }
-  }, [generatedResult]);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -78,10 +74,10 @@ export default function StudioScreen() {
   };
 
   const handleGenerate = async () => {
-    if (!selectedImage || selectedColors.length === 0) {
+    if (!selectedImage || selectedColors.length === 0 || !selectedHairStyle) {
       Alert.alert(
         'Missing Information',
-        'Please select a photo and at least one color'
+        'Please select a photo, at least one color, and a hair style'
       );
       return;
     }
@@ -93,6 +89,7 @@ export default function StudioScreen() {
         imageUri: selectedImage,
         prompt: prompt || 'Hair color transformation',
         colors: selectedColors,
+        hairStyle: selectedHairStyle,
       });
 
       if (result.success) {
@@ -102,16 +99,12 @@ export default function StudioScreen() {
           generatedImage: result.imageUrl,
           prompt: prompt || 'Hair color transformation',
           colors: selectedColors,
+          hairStyle: selectedHairStyle || undefined,
           timestamp: new Date().toISOString(),
           analysis: result.metadata?.analysis,
         };
 
         setGeneratedResult(transformationResult);
-        console.log('Generated result set:', transformationResult);
-        console.log(
-          'Generated image URI:',
-          transformationResult.generatedImage
-        );
         Alert.alert('Success!', 'Your hair transformation analysis is ready!');
       } else {
         Alert.alert(
@@ -194,6 +187,14 @@ export default function StudioScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>2.5. Select Your Hair Style</Text>
+          <HairStyleSelector
+            selectedHairStyle={selectedHairStyle}
+            onHairStyleSelect={setSelectedHairStyle}
+          />
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>3. Describe Your Vision</Text>
           <PromptInput
             value={prompt}
@@ -220,10 +221,6 @@ export default function StudioScreen() {
                     onPress={() => {
                       console.log(
                         'After image tapped, setting fullscreen visible to true'
-                      );
-                      console.log(
-                        'Generated result image URI:',
-                        generatedResult.generatedImage
                       );
                       setIsFullscreenVisible(true);
                     }}
@@ -268,7 +265,11 @@ export default function StudioScreen() {
           <GenerateButton
             onPress={handleGenerate}
             isLoading={isGenerating}
-            disabled={!selectedImage || selectedColors.length === 0}
+            disabled={
+              !selectedImage ||
+              selectedColors.length === 0 ||
+              !selectedHairStyle
+            }
           />
         </View>
       </KeyboardAwareScrollView>
