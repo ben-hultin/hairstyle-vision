@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, Upload } from 'lucide-react-native';
+import { Camera, Upload, Palette, ArrowRight } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { ColorPalette } from '@/components/ColorPalette';
@@ -23,6 +24,7 @@ import { TransformationResult } from '@/types';
 
 export default function StudioScreen() {
   const { width } = useWindowDimensions();
+  const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedHairStyle, setSelectedHairStyle] = useState<string | null>(
@@ -71,6 +73,25 @@ export default function StudioScreen() {
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
     }
+  };
+
+  const navigateToHighlightStudio = () => {
+    if (!selectedImage || selectedColors.length === 0 || !selectedHairStyle) {
+      Alert.alert(
+        'Missing Information',
+        'Please select a photo, at least one color, and a hair style before customizing highlights'
+      );
+      return;
+    }
+
+    router.push({
+      pathname: '/highlight-studio',
+      params: {
+        imageUri: selectedImage,
+        selectedColors: JSON.stringify(selectedColors),
+        hairStyle: selectedHairStyle,
+      },
+    });
   };
 
   const handleGenerate = async () => {
@@ -194,8 +215,69 @@ export default function StudioScreen() {
           />
         </View>
 
+        {/* Highlight Customization */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>3. Describe Your Vision</Text>
+          <Text style={styles.sectionTitle}>
+            3. Customize Highlights (Optional)
+          </Text>
+          <View style={styles.highlightStudioCard}>
+            <View style={styles.highlightStudioContent}>
+              <View style={styles.highlightStudioIcon}>
+                <Palette size={32} color="#E91E63" strokeWidth={2} />
+              </View>
+              <View style={styles.highlightStudioText}>
+                <Text style={styles.highlightStudioTitle}>
+                  Draw Your Highlight Pattern
+                </Text>
+                <Text style={styles.highlightStudioDescription}>
+                  Use our drawing tools to create a custom highlight pattern on
+                  your photo. This will help the AI understand exactly where you
+                  want your highlights placed.
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.highlightStudioButton,
+                (!selectedImage ||
+                  selectedColors.length === 0 ||
+                  !selectedHairStyle) &&
+                  styles.highlightStudioButtonDisabled,
+              ]}
+              onPress={navigateToHighlightStudio}
+              disabled={
+                !selectedImage ||
+                selectedColors.length === 0 ||
+                !selectedHairStyle
+              }
+            >
+              <Text
+                style={[
+                  styles.highlightStudioButtonText,
+                  (!selectedImage ||
+                    selectedColors.length === 0 ||
+                    !selectedHairStyle) &&
+                    styles.highlightStudioButtonTextDisabled,
+                ]}
+              >
+                Open Highlight Studio
+              </Text>
+              <ArrowRight
+                size={20}
+                color={
+                  !selectedImage ||
+                  selectedColors.length === 0 ||
+                  !selectedHairStyle
+                    ? '#ccc'
+                    : 'white'
+                }
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>4. Describe Your Vision</Text>
           <PromptInput
             value={prompt}
             onChangeText={setPrompt}
@@ -448,5 +530,65 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     lineHeight: 18,
+  },
+  highlightStudioCard: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  highlightStudioContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  highlightStudioIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#fce4ec',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  highlightStudioText: {
+    flex: 1,
+  },
+  highlightStudioTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  highlightStudioDescription: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+  highlightStudioButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E91E63',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    gap: 8,
+  },
+  highlightStudioButtonDisabled: {
+    backgroundColor: '#f5f5f5',
+  },
+  highlightStudioButtonText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    color: 'white',
+  },
+  highlightStudioButtonTextDisabled: {
+    color: '#ccc',
   },
 });
